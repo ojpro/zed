@@ -1849,12 +1849,10 @@ impl WorkspaceDb {
             // If a local workspace points to WSL, this check will cause us to wait for the
             // WSL VM and file server to boot up. This can block for many seconds.
             // Supported scenarios use remote workspaces.
-            if !has_wsl_path
-                && Self::all_paths_exist_with_a_directory(paths.paths(), fs, Some(timestamp)).await
-            {
-                result.push((id, SerializedWorkspaceLocation::Local, paths, timestamp));
-            } else {
+            if has_wsl_path || Utc::now() - timestamp >= chrono::Duration::days(7) {
                 delete_tasks.push(self.delete_workspace_by_id(id));
+            } else if Self::all_paths_exist_with_a_directory(paths.paths(), fs, None).await {
+                result.push((id, SerializedWorkspaceLocation::Local, paths, timestamp));
             }
         }
 
